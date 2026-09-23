@@ -1,0 +1,4 @@
+subject_name,exam_name,exam_year,organization_name,question_text,option_a,option_b,option_c,option_d,correct_answer,explanation,difficulty,source
+বাংলা,৪৫তম BCS প্রিলি,2023,বাংলাদেশ সরকারী কর্ম কমিশন,"'সমুদ্র' শব্দের সন্ধি বিচ্ছেদ কোনটি?",সম+উদ্র,সমু+দ্র,সম্+উদ্র,সমুদ+র,সম+উদ্র,"সম + উদ্র = সমুদ্র (ব্যঞ্জনসন্ধি)",medium,manual
+গণিত,৪৫তম BCS প্রিলি,2023,বাংলাদেশ সরকারী কর্ম কমিশন,"২ এর ঘনমূল কত?",1.26,1.41,1.5,2,1.26,,easy,manual
+,৪৫তম BCS প্রিলি,2023,বাংলাদেশ সরকারী কর্ম কমিশন,"subject_name খালি থাকলে এই রো error দেখাবে",a,b,c,d,a,,easy,manual

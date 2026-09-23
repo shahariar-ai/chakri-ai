@@ -1,0 +1,17 @@
+[
+  {
+    "subject_name": "সাধারণ জ্ঞান",
+    "exam_name": "৪৫তম BCS প্রিলি",
+    "exam_year": 2023,
+    "organization_name": "বাংলাদেশ সরকারী কর্ম কমিশন",
+    "question_text": "বাংলাদেশের জাতীয় সংসদের বর্তমান সদস্য সংখ্যা কত?",
+    "option_a": "300",
+    "option_b": "350",
+    "option_c": "330",
+    "option_d": "345",
+    "correct_answer": "350",
+    "explanation": "৩০০ নির্বাচিত + ৫০ সংরক্ষিত মহিলা আসন",
+    "difficulty": "easy",
+    "source": "manual"
+  }
+]

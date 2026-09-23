@@ -1,0 +1,30 @@
+# ---------- গোপন তথ্য (কখনো কমিট নয়) ----------
+.env
+.env.*
+!.env.example
+backend/firebase-service-account.json
+*service-account*.json
+mobile_app/android/key.properties
+*.jks
+*.keystore
+
+# ---------- ডেটাবেস ও ব্যাকআপ ----------
+backend/*.db
+backend/*.db.*
+*.sqlite3
+
+# ---------- Python ----------
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.log
+
+# ---------- Flutter build আউটপুট ----------
+mobile_app/build/
+mobile_app/.dart_tool/
+
+# ---------- Claude Code লোকাল ফাইল ----------
+.claude/settings.local.json
+.claude/*.lock
