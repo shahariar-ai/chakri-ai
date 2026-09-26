@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- release APK-এ ব্যাকএন্ড (Render) কল করার জন্য দরকার; debug/profile manifest-এ আলাদা করে আছে -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="chakri_ai"
         android:name="${applicationName}"

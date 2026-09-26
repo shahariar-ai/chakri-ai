@@ -28,7 +28,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   Win32Window::Point origin(10, 10);
   Win32Window::Size size(1280, 720);
   // উইন্ডো টাইটেল "চাকরি AI" — MSVC সোর্স এনকোডিং সমস্যা এড়াতে Unicode escape
-  if (!window.Create(L"চাকরি AI", origin, size)) {
+  if (!window.Create(L"\u099A\u09BE\u0995\u09B0\u09BF AI", origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);

@@ -1,34 +1,5 @@
 """Mock Interview API টেস্ট — Claude API কল mock করা, তাই কোনো খরচ হয় না।"""
-import json
-from types import SimpleNamespace
-
 import pytest
-
-from routers import interview
-
-
-class FakeClaude:
-    def __init__(self, payload, stop_reason="end_turn"):
-        self.payload = payload
-        self.stop_reason = stop_reason
-        self.calls = []
-        self.messages = self
-
-    def create(self, **kwargs):
-        self.calls.append(kwargs)
-        text = self.payload if isinstance(self.payload, str) else json.dumps(self.payload, ensure_ascii=False)
-        return SimpleNamespace(stop_reason=self.stop_reason, content=[SimpleNamespace(type="text", text=text)])
-
-
-@pytest.fixture
-def fake(monkeypatch):
-    holder = {}
-
-    def install(payload, stop_reason="end_turn"):
-        holder["c"] = FakeClaude(payload, stop_reason)
-        monkeypatch.setattr(interview, "_client", lambda: holder["c"])
-        return holder["c"]
-    return install
 
 
 BASE = {"target_position": "অফিসার", "interview_type": "bank", "total_questions": 3}

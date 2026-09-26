@@ -6,10 +6,14 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 import 'package:chakri_ai/models/question_models.dart';
+import 'package:chakri_ai/models/resume_models.dart';
+import 'package:chakri_ai/screens/resume_preview_screen.dart';
 import 'package:chakri_ai/screens/cover_letter_screen.dart';
 import 'package:chakri_ai/screens/home_screen.dart';
 import 'package:chakri_ai/screens/mock_interview_screen.dart';
 import 'package:chakri_ai/screens/premium_screen.dart';
+import 'package:chakri_ai/screens/job_match_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:chakri_ai/screens/question_list_screen.dart';
 import 'package:chakri_ai/screens/study_material_detail_screen.dart';
 import 'package:chakri_ai/screens/subject_list_screen.dart';
@@ -342,5 +346,150 @@ void main() {
     expect(find.text('আপনি প্রিমিয়াম সদস্য'), findsNothing);
     expect(find.text('পেমেন্ট স্ট্যাটাস চেক করুন'), findsNothing);
     expect(find.text('পেমেন্ট করুন'), findsOneWidget);
+  });
+
+  Map<String, dynamic> analysisJson({int? circularId, bool sufficient = true}) => {
+        'circular_id': circularId,
+        'job_title': circularId != null ? 'হিসাব সহকারী' : null,
+        'match_score': 82,
+        'eligibility': 'eligible',
+        'info_sufficient': sufficient,
+        'verdict': 'বেশ উপযুক্ত',
+        'matched_skills': ['MS Excel'],
+        'missing_skills': [
+          {'skill': 'Tally ERP', 'importance': 'high', 'how_to_learn': 'অনলাইন কোর্স'}
+        ],
+        'strengths': ['অ্যাকাউন্টিং ব্যাকগ্রাউন্ড'],
+        'action_plan': ['১. Tally শিখুন', '২. আবেদন করুন'],
+      };
+
+  testWidgets('জব ম্যাচিং: স্কিল যোগ -> সাজেশন -> ট্যাপে স্কিল গ্যাপ বিশ্লেষণ, প্রোফাইল সেভ হয়', (tester) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({});
+
+    final bodies = <String, Map<String, dynamic>>{};
+    final client = MockClient((req) async {
+      final body = jsonDecode(utf8.decode(req.bodyBytes)) as Map<String, dynamic>;
+      bodies[req.url.path] = body;
+      if (req.url.path == '/api/job-match/recommend') {
+        return _json({
+          'considered': 25,
+          'jobs': [
+            {
+              'circular_id': 47,
+              'title': 'হিসাব সহকারী',
+              'organization': 'BPSC',
+              'category': 'Government Job',
+              'application_deadline': '2026-10-15T00:00:00',
+              'match_score': 88,
+              'reason': 'অ্যাকাউন্টিং মেলে',
+            }
+          ],
+        });
+      }
+      return _json(analysisJson(circularId: body['circular_id']));
+    });
+
+    await http.runWithClient(() async {
+      await tester.pumpWidget(_wrap(const JobMatchScreen()));
+      await tester.pumpAndSettle();
+
+      // স্কিল ছাড়া খুঁজলে থামবে
+      await tester.tap(find.text('উপযুক্ত চাকরি খুঁজুন'));
+      await tester.pump();
+      expect(find.text('অন্তত একটা স্কিল যোগ করুন'), findsOneWidget);
+      expect(bodies, isEmpty);
+
+      // কমা দিয়ে একসাথে দুটো স্কিল, ডুপ্লিকেট বাদ
+      await tester.enterText(find.widgetWithText(TextField, 'স্কিল'), 'MS Excel, Accounting, ms excel');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+      expect(find.byType(InputChip), findsNWidgets(2));
+      await tester.enterText(find.widgetWithText(TextField, 'বয়স'), '27');
+
+      await tester.tap(find.text('উপযুক্ত চাকরি খুঁজুন'));
+      await tester.pumpAndSettle();
+      expect(find.text('25টা চালু সার্কুলারের মধ্যে আপনার জন্য সেরা 1টা'), findsOneWidget);
+      expect(find.text('88'), findsOneWidget);
+
+      await tester.tap(find.text('হিসাব সহকারী'));
+      await tester.pumpAndSettle();
+    }, () => client);
+
+    expect(bodies['/api/job-match/recommend']!['skills'], ['MS Excel', 'Accounting']);
+    expect(bodies['/api/job-match/recommend']!['age'], 27);
+    expect(bodies['/api/job-match/analyze']!['circular_id'], 47);
+    expect(find.text('82'), findsOneWidget);
+    expect(find.text('Tally ERP'), findsOneWidget);
+    expect(find.text('জরুরি'), findsOneWidget);
+    expect(find.text('Tally শিখুন'), findsOneWidget); // AI-র দেওয়া নম্বর সরিয়ে নিজেদের নম্বর
+    expect(find.text('সার্কুলার দেখুন'), findsOneWidget);
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(jsonDecode(prefs.getString('job_match_profile')!)['skills'], ['MS Excel', 'Accounting']);
+  });
+
+  testWidgets('স্কিল গ্যাপ: সেভ করা প্রোফাইল লোড হয়, তথ্য কম হলে স্কোরের বদলে সতর্কবার্তা', (tester) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({
+      'job_match_profile': jsonEncode({'skills': ['Python'], 'education': 'BSc CSE'}),
+    });
+
+    Map<String, dynamic>? sent;
+    final client = MockClient((req) async {
+      sent = jsonDecode(utf8.decode(req.bodyBytes));
+      return _json(analysisJson(sufficient: false));
+    });
+
+    await http.runWithClient(() async {
+      await tester.pumpWidget(_wrap(const JobMatchScreen(initialTab: JobMatchScreen.tabSkillGap)));
+      await tester.pumpAndSettle();
+      expect(find.text('Python'), findsOneWidget); // গুটানো প্রোফাইলের subtitle-এ
+
+      // চাকরির তথ্য ছাড়া বিশ্লেষণ হবে না
+      await tester.tap(find.text('স্কিল গ্যাপ বিশ্লেষণ করুন'));
+      await tester.pump();
+      expect(find.text('সার্কুলার বেছে নিন অথবা জব ডেসক্রিপশন দিন'), findsOneWidget);
+      expect(sent, isNull);
+
+      await tester.enterText(
+          find.widgetWithText(TextField, 'জব ডেসক্রিপশন / সার্কুলারের চাহিদা'), 'Django developer');
+      await tester.tap(find.text('স্কিল গ্যাপ বিশ্লেষণ করুন'));
+      await tester.pumpAndSettle();
+    }, () => client);
+
+    expect(sent!['skills'], ['Python']);
+    expect(sent!['education'], 'BSc CSE');
+    expect(sent!['job_description'], 'Django developer');
+    expect(sent!.containsKey('circular_id'), isFalse);
+    expect(find.text('স্কোর: তথ্য অপর্যাপ্ত'), findsOneWidget);
+    expect(find.text('82'), findsNothing);
+    expect(find.textContaining('বিস্তারিত তথ্য নেই'), findsOneWidget);
+  });
+
+  testWidgets('রিজিউম PDF: ব্যাকএন্ডে টেক্সট পাঠায়, ব্যর্থ হলে বার্তা দেখায় ও বাটন আবার চালু হয়', (tester) async {
+    String? sentText;
+    final client = MockClient((req) async {
+      expect(req.url.path, '/api/resume/pdf');
+      sentText = jsonDecode(utf8.decode(req.bodyBytes))['text'];
+      return http.Response('err', 500);
+    });
+    final result = ResumeResult.fromJson({
+      'resume_text': 'রাকিব হাসান\nসারসংক্ষেপ',
+      'ats_score_tips': ['টিপ ১'],
+    });
+    await http.runWithClient(() async {
+      await tester.pumpWidget(_wrap(ResumePreviewScreen(result: result)));
+      await tester.tap(find.text('PDF হিসেবে ডাউনলোড করুন'));
+      await tester.pumpAndSettle();
+    }, () => client);
+
+    expect(sentText, 'রাকিব হাসান\nসারসংক্ষেপ');
+    expect(find.text('PDF তৈরি করতে সমস্যা হয়েছে (500)'), findsOneWidget);
+    expect(find.text('PDF হিসেবে ডাউনলোড করুন'), findsOneWidget);
   });
 }

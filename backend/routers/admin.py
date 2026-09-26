@@ -7,8 +7,10 @@
         subject_name, exam_name, exam_year, organization_name, question_text,
         option_a, option_b, option_c, option_d, correct_answer, explanation,
         difficulty, source
-        - আবশ্যক: subject_name, question_text
+        - আবশ্যক: subject_name, question_text, অন্তত option_a ও option_b, correct_answer
+        - correct_answer: A/B/C/D (বা ক/খ/গ/ঘ) অথবা কোনো অপশনের হুবহু টেক্সট — সেভ হয় A-D অক্ষরে
         - subject_name আগে থেকে না থাকলে নতুন Subject অটো তৈরি হয়ে যাবে
+          (পুরনো ছোট নাম যেমন "বাংলা" হলে subject_aliases.py অনুযায়ী canonical নামে যায়)
 
     স্টাডি ম্যাটেরিয়াল (study-materials/import):
         subject_name, title, content, topic_tags
@@ -32,6 +34,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 import models
+from subject_aliases import canonical_subject_name
 import schemas
 
 router = APIRouter(prefix="/api/admin", tags=["Admin - Bulk Import"])
@@ -46,7 +49,8 @@ def verify_admin_key(x_admin_key: Optional[str] = Header(None)):
 
 
 def get_or_create_subject(db: Session, name: str) -> models.Subject:
-    name = name.strip()
+    # "বাংলা"-র মতো পুরনো ছোট নাম merge-করা canonical নামে বদলে নেওয়া হয়
+    name = canonical_subject_name(name)
     subject = db.query(models.Subject).filter(models.Subject.name == name).first()
     if subject:
         return subject
@@ -108,7 +112,7 @@ async def import_questions(
         try:
             parsed = schemas.ExamQuestionImportRow(**row)
         except ValidationError as e:
-            errors.append({"row": idx, "reason": e.errors()[0]["msg"], "data": row})
+            errors.append({"row": idx, "reason": e.errors()[0]["msg"].removeprefix("Value error, "), "data": row})
             continue
 
         subject = get_or_create_subject(db, parsed.subject_name)
@@ -177,7 +181,7 @@ async def import_study_materials(
         try:
             parsed = schemas.StudyMaterialImportRow(**row)
         except ValidationError as e:
-            errors.append({"row": idx, "reason": e.errors()[0]["msg"], "data": row})
+            errors.append({"row": idx, "reason": e.errors()[0]["msg"].removeprefix("Value error, "), "data": row})
             continue
 
         subject = get_or_create_subject(db, parsed.subject_name)
@@ -222,7 +226,7 @@ QUESTION_TEMPLATE_CSV = (
     "option_a,option_b,option_c,option_d,correct_answer,explanation,difficulty,source\n"
     "বাংলা ব্যাকরণ ও সাহিত্য,৪৫তম BCS প্রিলি,2023,বাংলাদেশ সরকারী কর্ম কমিশন,"
     "\"'সমুদ্র' শব্দের সন্ধি বিচ্ছেদ কোনটি?\","
-    "সম+উদ্র,সমু+দ্র,সম্+উদ্র,সমুদ+র,সম+উদ্র,"
+    "সম+উদ্র,সমু+দ্র,সম্+উদ্র,সমুদ+র,A,"
     "\"সম + উদ্র = সমুদ্র (ব্যঞ্জনসন্ধি)\",medium,manual\n"
 )
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'cover_letter_screen.dart';
+import 'job_match_screen.dart';
 import '../models/circular_models.dart';
 import '../services/api_service.dart';
 
@@ -97,6 +98,18 @@ class _CircularDetailScreenState extends State<CircularDetailScreen> {
           onPressed: () => _openCoverLetter(c),
           icon: const Icon(Icons.mail_outline),
           label: const Text("এই পদের জন্য কভার লেটার লিখুন"),
+          style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+        ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => JobMatchScreen(circularId: c.id, circularTitle: c.title),
+            ),
+          ),
+          icon: const Icon(Icons.analytics_outlined),
+          label: const Text("আমি কতটা উপযুক্ত? (স্কিল গ্যাপ)"),
           style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
         ),
       ],

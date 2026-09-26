@@ -1,0 +1,47 @@
+# Render Blueprint — চাকরি AI backend + ফ্রি PostgreSQL
+# Render Dashboard -> New -> Blueprint -> এই GitHub repo সিলেক্ট করলে নিচের সব একসাথে তৈরি হবে।
+# sync: false দেওয়া ভ্যারিয়েবলগুলোর মান Render প্রথমবার জিজ্ঞেস করবে (গোপন তথ্য GitHub-এ রাখা হয় না)।
+
+services:
+  - type: web
+    name: chakri-ai-backend
+    runtime: python
+    plan: free
+    region: singapore          # বাংলাদেশের সবচেয়ে কাছের Render রিজিয়ন
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    # প্রতিবার চালু হওয়ার আগে migration চালানো হয় (ফ্রি প্ল্যানে আলাদা pre-deploy command নেই)।
+    # --proxy-headers: Render-এর প্রক্সির পেছনে https URL সঠিকভাবে চেনার জন্য
+    startCommand: alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"
+    healthCheckPath: /api/health
+    autoDeploy: true           # main ব্রাঞ্চে push করলেই নতুন ডিপ্লয়
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.11         # লোকাল .venv-এর সাথে মিলিয়ে রাখা
+      - key: DATABASE_URL
+        fromDatabase:
+          name: chakri-ai-db
+          property: connectionString
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ADMIN_API_KEY
+        generateValue: true    # Render নিজে র‍্যান্ডম সিক্রেট বানাবে; Dashboard-এ দেখা যাবে
+      - key: PAYMENT_MOCK_ENABLED
+        value: "false"         # প্রোডাকশনে mock পেমেন্ট বন্ধ
+      - key: BKASH_BASE_URL
+        value: https://tokenized.sandbox.bka.sh/v1.2.0-beta   # লাইভে গেলে bKash-এর প্রোডাকশন URL দিন
+      - key: BKASH_APP_KEY
+        sync: false
+      - key: BKASH_APP_SECRET
+        sync: false
+      - key: BKASH_USERNAME
+        sync: false
+      - key: BKASH_PASSWORD
+        sync: false
+
+databases:
+  - name: chakri-ai-db
+    plan: free
+    region: singapore          # ওয়েব সার্ভিসের একই রিজিয়নে রাখলে internal URL দিয়ে দ্রুত কানেক্ট হয়
+    databaseName: chakri_ai
+    user: chakri_ai

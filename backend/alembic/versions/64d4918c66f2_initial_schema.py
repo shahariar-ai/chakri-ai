@@ -128,6 +128,8 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_organizations_name'), table_name='organizations')
     op.drop_index(op.f('ix_organizations_id'), table_name='organizations')
     op.drop_table('organizations')
+    # PostgreSQL-এ enum আলাদা TYPE হিসেবে থাকে, টেবিল drop করলেও মোছে না (SQLite-এ no-op)
+    sa.Enum(name='orgtype').drop(op.get_bind(), checkfirst=True)
     op.drop_index(op.f('ix_device_tokens_id'), table_name='device_tokens')
     op.drop_table('device_tokens')
     # ### end Alembic commands ###

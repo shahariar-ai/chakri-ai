@@ -6,22 +6,14 @@ Stateless ডিজাইন: সার্ভারে সেশন সেভ �
   ১. শেষ উত্তরটা মূল্যায়ন করে (স্কোর + ফিডব্যাক),
   ২. পরের প্রশ্ন দেয়, অথবা সব প্রশ্ন শেষ হলে সামগ্রিক সারাংশ দেয়।
 """
-import json
-import os
 from typing import List, Literal, Optional
 
-import anthropic
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+from ai_json import call_json
+
 router = APIRouter(prefix="/api/interview", tags=["Mock Interview"])
-
-AI_MODEL = "claude-sonnet-4-6"  # main.py-র resume/cover letter-এর সাথে একই মডেল
-
-
-def _client() -> anthropic.Anthropic:
-    # main.py-তে load_dotenv() রাউটার import-এর পরে চলে, তাই ক্লায়েন্ট lazily বানানো হয়
-    return anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
 InterviewType = Literal["govt_viva", "bank", "private"]
 
@@ -158,37 +150,13 @@ def _build_prompt(data: InterviewRequest, finished: bool) -> str:
 @router.post("/turn", response_model=InterviewResponse)
 def interview_turn(data: InterviewRequest):
     """history খালি হলে প্রথম প্রশ্ন দেয়; নাহলে শেষ উত্তরের ফিডব্যাক + পরের প্রশ্ন/সারাংশ।"""
-    if not os.getenv("ANTHROPIC_API_KEY"):
-        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY সেট করা নেই")
     if len(data.history) > data.total_questions:
         raise HTTPException(status_code=400, detail="history-তে total_questions-এর বেশি উত্তর আছে")
     if any(not t.answer.strip() for t in data.history):
         raise HTTPException(status_code=400, detail="খালি উত্তর পাঠানো যাবে না")
 
     finished = len(data.history) == data.total_questions
-    try:
-        # SDK 0.39-এ output_config প্যারামিটার নেই, তাই extra_body দিয়ে structured output চাওয়া হলো
-        message = _client().messages.create(
-            model=AI_MODEL,
-            max_tokens=4000,
-            messages=[{"role": "user", "content": _build_prompt(data, finished)}],
-            extra_body={"output_config": {"format": {
-                "type": "json_schema",
-                "schema": _output_schema(bool(data.history), finished),
-            }}},
-        )
-    except anthropic.APIStatusError as e:
-        raise HTTPException(status_code=502, detail=f"AI error ({e.status_code}): {e.message}")
-    except anthropic.APIConnectionError:
-        raise HTTPException(status_code=502, detail="AI সার্ভারে সংযোগ করা যায়নি")
-
-    if message.stop_reason != "end_turn":
-        raise HTTPException(status_code=502, detail=f"AI উত্তর অসম্পূর্ণ (stop_reason={message.stop_reason})")
-    text = next((b.text for b in message.content if b.type == "text"), "")
-    try:
-        out = json.loads(text)
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=502, detail="AI থেকে অবৈধ JSON এসেছে")
+    out = call_json(_build_prompt(data, finished), _output_schema(bool(data.history), finished))
 
     feedback = out.get("feedback")
     if feedback:

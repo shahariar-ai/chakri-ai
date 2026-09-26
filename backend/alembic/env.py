@@ -13,16 +13,18 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 load_dotenv()
 
-from database import Base  # noqa: E402
+from database import Base, get_database_url  # noqa: E402
 import models  # noqa: E402  - সব মডেল রেজিস্টার করার জন্য import করতে হবে
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
-# .env থেকে DATABASE_URL পড়ে alembic.ini-এর sqlalchemy.url override করা হলো
-db_url = os.getenv("DATABASE_URL", "sqlite:///./chakri_ai.db")
-config.set_main_option("sqlalchemy.url", db_url)
+# .env/environment থেকে DATABASE_URL পড়ে alembic.ini-এর sqlalchemy.url override করা হলো
+# (অ্যাপের সাথে একই নিয়ম: postgres:// -> postgresql://, না থাকলে SQLite)
+# '%' থাকলে configparser interpolation ভাঙে, তাই '%%' করে escape
+db_url = get_database_url()
+config.set_main_option("sqlalchemy.url", db_url.replace("%", "%%"))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

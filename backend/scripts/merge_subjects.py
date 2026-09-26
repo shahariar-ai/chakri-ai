@@ -20,14 +20,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database import SessionLocal
 import models
 
-# পুরনো নাম -> canonical নাম
-SUBJECT_MERGES = {
-    "বাংলা": "বাংলা ব্যাকরণ ও সাহিত্য",
-    "ইংরেজি": "ইংরেজি গ্রামার ও Vocabulary",
-    "সাধারণ জ্ঞান": "সাধারণ জ্ঞান (বাংলাদেশ বিষয়াবলি)",
-    "বিজ্ঞান": "বিজ্ঞান ও প্রযুক্তি",
-    "গণিত": "সাধারণ গণিত",
-}
+# পুরনো নাম -> canonical নাম (admin import-ও একই তালিকা ব্যবহার করে)
+from subject_aliases import SUBJECT_ALIASES as SUBJECT_MERGES  # noqa: E402
 
 # merge-এর আগে ভুল subject-এ থাকা নির্দিষ্ট প্রশ্ন সঠিক subject-এ সরানো (question_text-এর অংশ -> subject নাম)
 QUESTION_MOVES = {

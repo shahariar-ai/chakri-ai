@@ -12,3 +12,6 @@ apscheduler==3.10.4
 firebase-admin==6.5.0
 python-multipart==0.0.9
 alembic==1.13.3
+fpdf2==2.8.7
+uharfbuzz==0.56.2
+psycopg2-binary==2.9.10

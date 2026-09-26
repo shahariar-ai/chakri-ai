@@ -5,6 +5,7 @@ import 'subject_list_screen.dart';
 import 'cover_letter_screen.dart';
 import 'mock_interview_screen.dart';
 import 'premium_screen.dart';
+import 'job_match_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -78,13 +79,21 @@ class HomeScreen extends StatelessWidget {
         icon: Icons.search_rounded,
         title: "জব ম্যাচিং",
         subtitle: "আপনার স্কিল অনুযায়ী চাকরির সাজেশন",
-        enabled: false,
+        enabled: true,
+        onTap: (ctx) => Navigator.push(
+          ctx,
+          MaterialPageRoute(builder: (_) => const JobMatchScreen(initialTab: JobMatchScreen.tabRecommend)),
+        ),
       ),
       _FeatureItem(
         icon: Icons.trending_up_rounded,
         title: "স্কিল গ্যাপ অ্যানালাইসিস",
         subtitle: "কোন স্কিল শিখলে চাকরি পাওয়া সহজ হবে",
-        enabled: false,
+        enabled: true,
+        onTap: (ctx) => Navigator.push(
+          ctx,
+          MaterialPageRoute(builder: (_) => const JobMatchScreen(initialTab: JobMatchScreen.tabSkillGap)),
+        ),
       ),
     ];
 

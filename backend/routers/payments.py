@@ -55,8 +55,10 @@ def _provider_mode(provider: str) -> Optional[str]:
 
 
 def _public_base_url(request: Request) -> str:
-    # bKash callback-এর জন্য ব্রাউজার থেকে পৌঁছানো যায় এমন URL; প্রোডাকশনে PUBLIC_BASE_URL সেট করতে হবে
-    return os.getenv("PUBLIC_BASE_URL", str(request.base_url)).rstrip("/")
+    # bKash callback-এর জন্য ব্রাউজার থেকে পৌঁছানো যায় এমন URL।
+    # ক্রম: PUBLIC_BASE_URL (কাস্টম ডোমেইন) > RENDER_EXTERNAL_URL (Render নিজে সেট করে) > রিকোয়েস্টের host
+    url = os.getenv("PUBLIC_BASE_URL") or os.getenv("RENDER_EXTERNAL_URL") or str(request.base_url)
+    return url.rstrip("/")
 
 
 # ---------- Schemas ----------

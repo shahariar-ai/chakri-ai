@@ -6,6 +6,7 @@ import '../models/circular_models.dart';
 import '../models/question_models.dart';
 import '../models/interview_models.dart';
 import '../models/payment_models.dart';
+import '../models/job_match_models.dart';
 
 class ApiService {
   // ব্যাকএন্ড URL: --dart-define=API_BASE_URL=http://192.168.x.x:8000 দিয়ে override করা যায়
@@ -67,6 +68,23 @@ class ApiService {
     }
   }
 
+  /// রিজিউম টেক্সট -> PDF bytes। PDF ব্যাকএন্ডে বানানো হয়, কারণ Flutter-এর pdf প্যাকেজ
+  /// বাংলা যুক্তাক্ষর/কার shape করতে পারে না (backend/pdf_export.py দেখুন)।
+  Future<Uint8List> exportResumePdf(String text) async {
+    final uri = Uri.parse("$baseUrl/api/resume/pdf");
+    final response = await http.post(
+      uri,
+      headers: {"Content-Type": "application/json; charset=UTF-8"},
+      body: jsonEncode({"text": text}),
+    );
+
+    if (response.statusCode == 200) {
+      return response.bodyBytes;
+    } else {
+      throw Exception('PDF তৈরি করতে সমস্যা হয়েছে (${response.statusCode})');
+    }
+  }
+
   // ---------------- Mock Interview ----------------
 
   /// history-তে শুধু উত্তর দেওয়া প্রশ্নগুলো পাঠাতে হবে। খালি history = প্রথম প্রশ্ন।
@@ -89,6 +107,51 @@ class ApiService {
     } else {
       throw Exception(decoded['detail'] ?? 'ইন্টারভিউ প্রশ্ন আনতে সমস্যা হয়েছে');
     }
+  }
+
+  // ---------------- Job Matching / Skill Gap ----------------
+
+  /// circularId অথবা jobDescription — যেকোনো একটা দিতে হবে
+  Future<JobMatchAnalysis> analyzeJobMatch(
+    CandidateProfile profile, {
+    int? circularId,
+    String? jobDescription,
+    String language = "bn",
+  }) async {
+    final response = await http.post(
+      Uri.parse("$baseUrl/api/job-match/analyze"),
+      headers: {"Content-Type": "application/json; charset=UTF-8"},
+      body: jsonEncode({
+        ...profile.toJson(),
+        "language": language,
+        if (circularId != null) "circular_id": circularId,
+        if (jobDescription != null && jobDescription.isNotEmpty) "job_description": jobDescription,
+      }),
+    );
+    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    if (response.statusCode == 200) return JobMatchAnalysis.fromJson(decoded);
+    throw Exception(_detail(decoded) ?? 'বিশ্লেষণ করতে সমস্যা হয়েছে');
+  }
+
+  Future<RecommendResult> recommendJobs(CandidateProfile profile, {int limit = 5, String language = "bn"}) async {
+    final response = await http.post(
+      Uri.parse("$baseUrl/api/job-match/recommend"),
+      headers: {"Content-Type": "application/json; charset=UTF-8"},
+      body: jsonEncode({...profile.toJson(), "limit": limit, "language": language}),
+    );
+    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    if (response.statusCode == 200) return RecommendResult.fromJson(decoded);
+    throw Exception(_detail(decoded) ?? 'চাকরির সাজেশন আনতে সমস্যা হয়েছে');
+  }
+
+  /// FastAPI-র detail কখনো string (HTTPException), কখনো list (422 validation) — দুটোই সামলানো
+  static String? _detail(dynamic decoded) {
+    final d = decoded is Map ? decoded['detail'] : null;
+    if (d is String) return d;
+    if (d is List && d.isNotEmpty && d.first is Map) {
+      return (d.first['msg'] as String?)?.replaceFirst('Value error, ', '');
+    }
+    return null;
   }
 
   // ---------------- Premium / Payments ----------------

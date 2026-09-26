@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 
 # ---------- Organization ----------
@@ -130,6 +130,24 @@ class ExamQuestionImportRow(BaseModel):
     explanation: Optional[str] = None
     difficulty: str = "medium"
     source: Optional[str] = "bulk_import"
+
+    @model_validator(mode="after")
+    def _normalize_answer(self):
+        """অ্যাপ সঠিক উত্তর A/B/C/D অক্ষর দিয়ে চেনে — তাই অক্ষর, বাংলা বর্ণ বা অপশনের টেক্সট যা-ই আসুক অক্ষরে বদলানো।"""
+        options = {k: v for k, v in zip("ABCD", (self.option_a, self.option_b, self.option_c, self.option_d)) if v}
+        if len(options) < 2:
+            raise ValueError("অন্তত দুটো অপশন (option_a, option_b) দিতে হবে")
+        ans = (self.correct_answer or "").strip()
+        if not ans:
+            raise ValueError("correct_answer দিতে হবে")
+        letter = {"ক": "A", "খ": "B", "গ": "C", "ঘ": "D"}.get(ans, ans.upper())
+        if letter not in options:
+            # অক্ষর না হলে অপশনের টেক্সটের সাথে মেলানো
+            letter = next((k for k, v in options.items() if v.strip() == ans), None)
+        if letter is None:
+            raise ValueError(f"correct_answer '{ans}' কোনো অপশনের সাথে মেলে না")
+        self.correct_answer = letter
+        return self
 
 
 class StudyMaterialImportRow(BaseModel):

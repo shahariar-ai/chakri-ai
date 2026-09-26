@@ -50,4 +50,6 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_payments_provider_payment_id'), table_name='payments')
     op.drop_index(op.f('ix_payments_id'), table_name='payments')
     op.drop_table('payments')
+    # PostgreSQL-এ enum আলাদা TYPE হিসেবে থাকে, টেবিল drop করলেও মোছে না (SQLite-এ no-op)
+    sa.Enum(name='paymentstatus').drop(op.get_bind(), checkfirst=True)
     # ### end Alembic commands ###
