@@ -38,3 +38,6 @@
 - প্রশ্নব্যাংকে AI-content disclaimer + প্রতিটা প্রশ্নে "ভুল জানান" (ইমেইল খসড়া, প্রশ্ন ID সহ; Android mailto query যোগ)।
 - সার্কুলার তালিকা ও বিস্তারিতে সোর্স নোট (bpsc.gov.bd ইত্যাদি অফিসিয়াল সাইট, যাচাইয়ের পরামর্শ)।
 - flutter analyze: clean; flutter test: 11/11 pass।
+
+## ধাপ ৯ (~10:50) ✅
+- `store_listing/` : privacy_policy.html, terms.html, refund_policy.html (প্রতিটায় বাংলা+English), যোগাযোগ shahriar.sharif406@gmail.com, ডেটা/Claude API/ডিভাইস টোকেন/মোছার নিয়ম আছে। `HOSTING_GITHUB_PAGES.md` — হোস্টিংয়ের ধাপ। ⚠️ খসড়া, আইনজীবী দেখালে ভালো।
