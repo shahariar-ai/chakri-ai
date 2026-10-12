@@ -100,7 +100,7 @@ class _ResumeFormScreenState extends State<ResumeFormScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("ত্রুটি: ${e.toString()}")),
+        SnackBar(content: Text("ত্রুটি: ${e.toString().replaceFirst('Exception: ', '')}")),
       );
     } finally {
       if (mounted) setState(() => _loading = false);

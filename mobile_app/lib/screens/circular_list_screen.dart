@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/info_note.dart';
 import '../models/circular_models.dart';
 import '../services/api_service.dart';
 import 'circular_detail_screen.dart';
@@ -44,7 +45,7 @@ class _CircularListScreenState extends State<CircularListScreen> {
       );
       setState(() => _circulars = result);
     } catch (e) {
-      setState(() => _error = e.toString());
+      setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -83,6 +84,7 @@ class _CircularListScreenState extends State<CircularListScreen> {
               ),
             ),
           const SizedBox(height: 8),
+          const InfoNote("সার্কুলারের তথ্য সরকারি ও বেসরকারি অফিসিয়াল সাইট (যেমন bpsc.gov.bd) থেকে সংগৃহীত। আবেদনের আগে অবশ্যই মূল অফিসিয়াল বিজ্ঞপ্তি যাচাই করুন।"),
           Expanded(child: _buildBody()),
         ],
       ),

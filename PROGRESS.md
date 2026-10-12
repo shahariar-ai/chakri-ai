@@ -32,3 +32,9 @@
 - /api/health (DB চেক সহ), render.yaml (Postgres, alembic, healthCheck, secrets sync:false), requirements.txt, CORS (CORS_ORIGINS env, ডিফল্ট *; cookie নেই) যাচাই করা — ঠিক আছে।
 - pytest: 87 passed (rate limit-এর ২টা নতুন টেস্ট সহ)।
 - ⚠️ in-memory limiter: একাধিক ইনস্ট্যান্সে গেলে Redis লাগবে; Render free-তে এক ইনস্ট্যান্স তাই ঠিক।
+
+## ধাপ ৮ (~10:25) ✅
+- সব ডেটা-স্ক্রিনে (সার্কুলার তালিকা/বিস্তারিত, সাবজেক্ট, প্রশ্নব্যাংক, স্টাডি মেটেরিয়াল) loading/error(আবার চেষ্টা)/empty আগে থেকেই ছিল — যাচাই করা হয়েছে; error বার্তা থেকে "Exception:" প্রিফিক্স সরানো।
+- প্রশ্নব্যাংকে AI-content disclaimer + প্রতিটা প্রশ্নে "ভুল জানান" (ইমেইল খসড়া, প্রশ্ন ID সহ; Android mailto query যোগ)।
+- সার্কুলার তালিকা ও বিস্তারিতে সোর্স নোট (bpsc.gov.bd ইত্যাদি অফিসিয়াল সাইট, যাচাইয়ের পরামর্শ)।
+- flutter analyze: clean; flutter test: 11/11 pass।

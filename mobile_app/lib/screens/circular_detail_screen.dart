@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/info_note.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'cover_letter_screen.dart';
 import 'job_match_screen.dart';
@@ -30,7 +31,7 @@ class _CircularDetailScreenState extends State<CircularDetailScreen> {
       final result = await _api.getCircularDetail(widget.circularId);
       setState(() => _circular = result);
     } catch (e) {
-      setState(() => _error = e.toString());
+      setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -62,6 +63,7 @@ class _CircularDetailScreenState extends State<CircularDetailScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        const InfoNote("তথ্যসূত্র: অফিসিয়াল বিজ্ঞপ্তি (যেমন bpsc.gov.bd)। ভুল বা পুরোনো হতে পারে — আবেদনের আগে মূল সাইটে যাচাই করুন।"),
         Text(c.title, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         if (c.organization != null)

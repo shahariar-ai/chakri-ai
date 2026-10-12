@@ -51,7 +51,7 @@ class _SubjectListScreenState extends State<SubjectListScreen> {
       final result = await _api.getSubjects();
       setState(() => _subjects = result);
     } catch (e) {
-      setState(() => _error = e.toString());
+      setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _loading = false);
     }

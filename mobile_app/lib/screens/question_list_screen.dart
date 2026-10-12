@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../widgets/info_note.dart';
 import '../models/question_models.dart';
 import '../services/api_service.dart';
 import 'study_material_detail_screen.dart';
@@ -69,7 +71,7 @@ class _QuestionBankTabState extends State<_QuestionBankTab> {
         _hasMore = result.length == _pageSize;
       });
     } catch (e) {
-      setState(() => _error = e.toString());
+      setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -89,7 +91,7 @@ class _QuestionBankTabState extends State<_QuestionBankTab> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
     } finally {
       if (mounted) setState(() => _loadingMore = false);
     }
@@ -113,8 +115,18 @@ class _QuestionBankTabState extends State<_QuestionBankTab> {
     if (_questions.isEmpty) {
       return const Center(child: Text("এই বিষয়ে এখনো কোনো প্রশ্ন যোগ করা হয়নি"));
     }
+    return Column(
+      children: [
+        const InfoNote(
+            "প্রশ্ন ও উত্তরের কিছু অংশ AI দিয়ে তৈরি বা সংকলিত। ভুল থাকতে পারে — পরীক্ষার আগে অফিসিয়াল বই/সূত্র থেকে মিলিয়ে নিন। ভুল পেলে প্রশ্নের নিচে 'ভুল জানান' চাপুন।"),
+        Expanded(child: _buildList()),
+      ],
+    );
+  }
+
+  Widget _buildList() {
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
       itemCount: _questions.length + (_hasMore ? 1 : 0),
       itemBuilder: (context, index) {
         if (index == _questions.length) {
@@ -223,10 +235,36 @@ class _QuestionCardState extends State<_QuestionCard> {
                   style: TextStyle(fontSize: 13, color: Colors.green.shade900),
                 ),
               ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: _reportError,
+                icon: const Icon(Icons.flag_outlined, size: 16),
+                label: const Text("ভুল জানান", style: TextStyle(fontSize: 12)),
+                style: TextButton.styleFrom(foregroundColor: Colors.grey.shade700),
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  // ইমেইল অ্যাপে প্রশ্নের আইডিসহ খসড়া খোলে
+  Future<void> _reportError() async {
+    final q = widget.question;
+    final subject = Uri.encodeComponent("চাকরি AI: প্রশ্নে ভুল (ID ${q.id})");
+    final body = Uri.encodeComponent("প্রশ্ন ID: ${q.id}\nপ্রশ্ন: ${q.questionText}\n\nকী ভুল পেয়েছেন:\n");
+    final uri = Uri.parse("mailto:shahriar.sharif406@gmail.com?subject=$subject&body=$body");
+    var ok = false;
+    try {
+      ok = await launchUrl(uri);
+    } catch (_) {}
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("ইমেইল অ্যাপ খোলা যায়নি। প্রশ্ন ID ${q.id} সহ shahriar.sharif406@gmail.com-এ জানান।")),
+      );
+    }
   }
 }
 
@@ -259,7 +297,7 @@ class _StudyMaterialTabState extends State<_StudyMaterialTab> {
       final result = await _api.getStudyMaterials(subjectId: widget.subject.id);
       setState(() => _materials = result);
     } catch (e) {
-      setState(() => _error = e.toString());
+      setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
