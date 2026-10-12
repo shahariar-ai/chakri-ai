@@ -1,4 +1,4 @@
-package com.example.chakri_ai
+package com.futuretechai.chakriai
 
 import io.flutter.embedding.android.FlutterActivity
 

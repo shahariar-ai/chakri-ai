@@ -1,0 +1,5 @@
+# এই ফাইলটা কপি করে key.properties নাম দিন (key.properties gitignored) এবং আসল মান বসান
+storePassword=YOUR_STORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=upload
+storeFile=C:/Users/LAPTOP/keys/chakri-ai-upload.jks
