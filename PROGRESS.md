@@ -51,3 +51,34 @@
 ## ধাপ ১০ (~11:10) ✅
 - `store_listing/LISTING.md` (নাম, short/full description বাংলা+English), `DATA_SAFETY_AND_RATING.md`, `GRAPHICS_AND_TESTING.md` (screenshot তালিকা, feature graphic নির্দেশ, closed testing শর্ত)।
 - closed testing (web search): নতুন personal account → ১২ tester × একটানা ১৪ দিন, তারপর production access আবেদন।
+
+## ধাপ ১১ — appbundle build ⚠️ সম্পন্ন হয়নি
+- `flutter build appbundle --release` শুরু হয়েছিল, কিন্তু সিস্টেমে RAM কম থাকায় Claude Code প্রক্রিয়াটি বন্ধ করে দেয় (কোড/কনফিগের ত্রুটি নয়)। নিরাপত্তার জন্য নিজে থেকে আবার চালাইনি।
+- আপনি অন্য অ্যাপ বন্ধ করে নিজে চালান:
+  `cd mobile_app && flutter build appbundle --release --dart-define=API_BASE_URL=https://<render-url>`
+- keystore (`key.properties`) না থাকলে debug key দিয়ে sign হবে — Play Store-এ আপলোডযোগ্য নয়।
+- debug-signed বিল্ড আগে যাচাই হয়নি; `flutter analyze` ও `flutter test` pass, Gradle-এর signing/targetSdk 36 কনফিগ বিল্ডে এখনো পরীক্ষিত নয়।
+
+---
+# চূড়ান্ত সারাংশ (2026-10-12)
+
+## সম্পূর্ণ
+ধাপ ২–১০ (কোড ও কাগজ): package `com.futuretechai.chakriai`, targetSdk 36, v1.0.0+1, আইকন, signing কনফিগ, API URL/retry/বাংলা loading, PAYMENTS_ENABLED=false, Firebase-ছাড়া নিরাপদ, rate limiting, UX disclaimer/ভুল জানান/সোর্স নোট, আইনি পাতা, Play listing/Data Safety/rating খসড়া।
+টেস্ট: pytest 87 pass, flutter analyze clean, flutter test 11 pass।
+
+## বাকি (আপনাকে করতে হবে)
+1. GitHub repo বানিয়ে remote যোগ ও push (NEEDS_USER.md #1) — push-এর আগে `git ls-files` দিয়ে .env/*.db/*.bak/key নেই নিশ্চিত করুন
+2. Play Developer account ফি ($25) ও পরিচয় যাচাই
+3. keystore বানানো ও key.properties (KEYSTORE_GUIDE.md)
+4. Firebase project + google-services.json (NEEDS_USER.md #2)
+5. Render deploy: ANTHROPIC_API_KEY সেট করুন, আসল URL জানান
+6. Screenshot ও feature graphic (store_listing/GRAPHICS_AND_TESTING.md)
+7. bKash/Nagad live credential — এবং Play Billing সিদ্ধান্ত (আগে নীতি ঝুঁকি দেখুন)
+8. আইনি পাতা GitHub Pages-এ হোস্ট করুন
+
+## Play Store আপলোডের ক্রম
+1. Render deploy → URL নিশ্চিত
+2. keystore বানান → `flutter build appbundle --release --dart-define=API_BASE_URL=...`
+3. Play Console-এ অ্যাপ তৈরি, listing/privacy URL/Data Safety/Content rating পূরণ
+4. Closed testing-এ .aab আপলোড, ১২+ tester ১৪ দিন
+5. Production access আবেদন → Production release
