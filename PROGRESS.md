@@ -23,3 +23,12 @@
 - ৬০ সেকেন্ড timeout + ৩ বার retry, ৫ সেকেন্ডের বেশি লাগলে বাংলা "সার্ভার ঘুম থেকে জাগছে" বার্তা (main.dart overlay)।
 - `AppConfig.paymentsEnabled` (--dart-define=PAYMENTS_ENABLED, ডিফল্ট false) — হোম থেকে প্রিমিয়াম কার্ড লুকানো।
 - flutter analyze: clean; flutter test: 11/11 pass।
+
+## ধাপ ৬ (~09:50) ✅
+- Firebase gradle plugin/google-services.json নেই; main.dart-এ Firebase init try/catch-এ — Firebase ছাড়াই অ্যাপ ক্র্যাশ করে না (flutter test pass)। দরকারি তথ্য NEEDS_USER.md-তে।
+
+## ধাপ ৭ (~10:00) ✅
+- নতুন `backend/rate_limit.py` middleware: AI endpoint (resume/cover-letter/interview/job-match) প্রতি IP 10/মিনিট, 60/ঘণ্টা (env দিয়ে বদলানো যায়), সীমা পেরোলে বাংলা 429 + Retry-After। নতুন dependency নেই।
+- /api/health (DB চেক সহ), render.yaml (Postgres, alembic, healthCheck, secrets sync:false), requirements.txt, CORS (CORS_ORIGINS env, ডিফল্ট *; cookie নেই) যাচাই করা — ঠিক আছে।
+- pytest: 87 passed (rate limit-এর ২টা নতুন টেস্ট সহ)।
+- ⚠️ in-memory limiter: একাধিক ইনস্ট্যান্সে গেলে Redis লাগবে; Render free-তে এক ইনস্ট্যান্স তাই ঠিক।

@@ -22,6 +22,7 @@ from dotenv import load_dotenv
 import anthropic
 
 from pdf_export import text_to_pdf
+from rate_limit import RateLimitMiddleware
 from routers import circulars, questions, notifications, admin, interview, payments, job_match
 
 load_dotenv()
@@ -41,6 +42,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# AI endpoint-এ rate limit (rate_limit.py)
+app.add_middleware(RateLimitMiddleware)
 
 # ডেটাবেস স্কিমা এখন Alembic migration দিয়ে ম্যানেজ করা হয় (Base.metadata.create_all() না)।
 # সার্ভার চালানোর আগে: alembic upgrade head

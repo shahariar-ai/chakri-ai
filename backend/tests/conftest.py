@@ -18,6 +18,7 @@ _tmpdir = tempfile.mkdtemp(prefix="chakri_test_")
 # TEST_DATABASE_URL দিলে (যেমন একটা খালি লোকাল PostgreSQL) সেখানে টেস্ট চলবে — সব টেবিল মুছে ফেলা হয়!
 os.environ["DATABASE_URL"] = os.getenv("TEST_DATABASE_URL") or f"sqlite:///{os.path.join(_tmpdir, 'test.db')}"
 os.environ.setdefault("ANTHROPIC_API_KEY", "test-key")
+os.environ["RATE_LIMIT_ENABLED"] = "false"  # নির্দিষ্ট টেস্টে monkeypatch দিয়ে চালু করা হয়
 for k in ("BKASH_APP_KEY", "BKASH_APP_SECRET", "BKASH_USERNAME", "BKASH_PASSWORD"):
     os.environ.pop(k, None)
 
