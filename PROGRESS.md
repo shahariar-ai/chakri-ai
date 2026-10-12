@@ -47,3 +47,7 @@
 - **ঝুঁকি:** বর্তমান bKash/Nagad প্রিমিয়াম ফ্লো সহ Play-তে গেলে নীতি লঙ্ঘনে অ্যাপ reject/suspend হতে পারে।
 - **সিদ্ধান্ত:** প্রথম release-এ `PAYMENTS_ENABLED=false` (ডিফল্ট), সব ফিচার ফ্রি। পরে প্রিমিয়াম চাইলে Play Billing (`in_app_purchase` প্যাকেজ) ব্যবহার করতে হবে; Play-তে bKash/Nagad সরাসরি চলবে বলে নিশ্চিত হইনি (তৃতীয়-পক্ষ সূত্রে Play-র নিজস্ব পেমেন্ট মেথডে bKash লিংক করার কথা আছে, কিন্তু অনানুষ্ঠানিক)। যাচাইয়ের সূত্র: [Payments policy](https://support.google.com/googleplay/android-developer/answer/10281818?hl=en)।
 - **বিকল্প:** bKash/Nagad শুধু ওয়েবসাইট বা Play-বহির্ভূত (sideload/APK) বিতরণে।
+
+## ধাপ ১০ (~11:10) ✅
+- `store_listing/LISTING.md` (নাম, short/full description বাংলা+English), `DATA_SAFETY_AND_RATING.md`, `GRAPHICS_AND_TESTING.md` (screenshot তালিকা, feature graphic নির্দেশ, closed testing শর্ত)।
+- closed testing (web search): নতুন personal account → ১২ tester × একটানা ১৪ দিন, তারপর production access আবেদন।
