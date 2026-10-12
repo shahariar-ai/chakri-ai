@@ -41,3 +41,9 @@
 
 ## ধাপ ৯ (~10:50) ✅
 - `store_listing/` : privacy_policy.html, terms.html, refund_policy.html (প্রতিটায় বাংলা+English), যোগাযোগ shahriar.sharif406@gmail.com, ডেটা/Claude API/ডিভাইস টোকেন/মোছার নিয়ম আছে। `HOSTING_GITHUB_PAGES.md` — হোস্টিংয়ের ধাপ। ⚠️ খসড়া, আইনজীবী দেখালে ভালো।
+
+## ধাপ ৫ — Google Play payment নীতি যাচাই (web search) ✅
+- **ফলাফল:** অ্যাপের ভেতরে ডিজিটাল পণ্য/সাবস্ক্রিপশন/প্রিমিয়াম ফিচার বিক্রিতে সাধারণভাবে **Google Play Billing বাধ্যতামূলক** (নীতির নির্দিষ্ট ব্যতিক্রম ছাড়া)। অ্যাপ থেকে অন্য পেমেন্ট মাধ্যমে (যেমন bKash/Nagad ওয়েব পেজ) ইউজারকে পাঠানোও সাধারণত নিষিদ্ধ। বিকল্প বিলিং শুধু নির্দিষ্ট অঞ্চলে (EEA, দক্ষিণ কোরিয়া, ভারত, মার্কিন যুক্তরাষ্ট্র ইত্যাদি) — **বাংলাদেশ তালিকায় পাইনি**।
+- **ঝুঁকি:** বর্তমান bKash/Nagad প্রিমিয়াম ফ্লো সহ Play-তে গেলে নীতি লঙ্ঘনে অ্যাপ reject/suspend হতে পারে।
+- **সিদ্ধান্ত:** প্রথম release-এ `PAYMENTS_ENABLED=false` (ডিফল্ট), সব ফিচার ফ্রি। পরে প্রিমিয়াম চাইলে Play Billing (`in_app_purchase` প্যাকেজ) ব্যবহার করতে হবে; Play-তে bKash/Nagad সরাসরি চলবে বলে নিশ্চিত হইনি (তৃতীয়-পক্ষ সূত্রে Play-র নিজস্ব পেমেন্ট মেথডে bKash লিংক করার কথা আছে, কিন্তু অনানুষ্ঠানিক)। যাচাইয়ের সূত্র: [Payments policy](https://support.google.com/googleplay/android-developer/answer/10281818?hl=en)।
+- **বিকল্প:** bKash/Nagad শুধু ওয়েবসাইট বা Play-বহির্ভূত (sideload/APK) বিতরণে।
