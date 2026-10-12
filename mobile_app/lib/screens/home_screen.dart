@@ -5,6 +5,7 @@ import 'subject_list_screen.dart';
 import 'cover_letter_screen.dart';
 import 'mock_interview_screen.dart';
 import 'premium_screen.dart';
+import '../config/app_config.dart';
 import 'job_match_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -65,6 +66,8 @@ class HomeScreen extends StatelessWidget {
           MaterialPageRoute(builder: (_) => const MockInterviewScreen()),
         ),
       ),
+      // প্রথম release-এ বন্ধ (Play Billing নীতি); চালু করতে --dart-define=PAYMENTS_ENABLED=true
+      if (AppConfig.paymentsEnabled)
       _FeatureItem(
         icon: Icons.workspace_premium_outlined,
         title: "প্রিমিয়াম",

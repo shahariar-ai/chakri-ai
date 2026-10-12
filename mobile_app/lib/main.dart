@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'screens/home_screen.dart';
+import 'services/api_service.dart';
 import 'services/notification_service.dart';
 
 Future<void> main() async {
@@ -50,6 +51,44 @@ class ChakriAiApp extends StatelessWidget {
           backgroundColor: Colors.transparent,
           foregroundColor: Colors.black87,
         ),
+      ),
+      builder: (context, child) => Stack(
+        children: [
+          child ?? const SizedBox.shrink(),
+          // সার্ভার ঘুম থেকে জাগতে দেরি করলে বাংলা বার্তা
+          ValueListenableBuilder<bool>(
+            valueListenable: ApiService.serverWaking,
+            builder: (context, waking, _) => waking
+                ? const Positioned(
+                    left: 16,
+                    right: 16,
+                    bottom: 24,
+                    child: Material(
+                      color: Color(0xFF323232),
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                      child: Padding(
+                        padding: EdgeInsets.all(14),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'সার্ভার ঘুম থেকে জাগছে, প্রথমবার ৩০-৬০ সেকেন্ড লাগতে পারে। অনুগ্রহ করে অপেক্ষা করুন…',
+                                style: TextStyle(color: Colors.white, fontSize: 14),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ],
       ),
       home: const HomeScreen(),
     );

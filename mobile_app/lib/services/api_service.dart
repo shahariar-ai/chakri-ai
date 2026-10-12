@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show SocketException;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/resume_models.dart';
@@ -14,17 +16,66 @@ class ApiService {
   // Android emulator -> 10.0.2.2 (হোস্ট মেশিনের localhost), web/desktop -> localhost
   static const String _overrideUrl = String.fromEnvironment('API_BASE_URL');
 
+  // প্রোডাকশন (release) বিল্ডে ডিফল্ট লাইভ URL; build-এর সময় --dart-define=API_BASE_URL=... দিয়ে বদলানো যায়।
+  // ⚠️ Render deploy-এর পর আসল URL বসান (বা --dart-define দিন)। release-এ সবসময় https হতে হবে।
+  static const String _productionUrl = 'https://chakri-ai-backend.onrender.com';
+
   static String get baseUrl {
     if (_overrideUrl.isNotEmpty) return _overrideUrl;
+    if (kReleaseMode) return _productionUrl;
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       return "http://10.0.2.2:8000";
     }
     return "http://localhost:8000";
   }
 
+  /// সার্ভার ধীর সাড়া দিলে (Render free tier ঘুম থেকে জাগার সময়) true হয়; UI একটা বাংলা বার্তা দেখায়।
+  static final ValueNotifier<bool> serverWaking = ValueNotifier<bool>(false);
+  static int _pending = 0;
+  static const _slowAfter = Duration(seconds: 5);
+  static const _timeout = Duration(seconds: 60);
+  static const _maxAttempts = 3;
+
+  static Future<http.Response> _send(Future<http.Response> Function() call) async {
+    _pending++;
+    final slowTimer = Timer(_slowAfter, () => serverWaking.value = true);
+    try {
+      for (var attempt = 1;; attempt++) {
+        try {
+          return await call().timeout(_timeout);
+        } on TimeoutException {
+          if (attempt >= _maxAttempts) {
+            throw Exception('সার্ভার সাড়া দিচ্ছে না। কিছুক্ষণ পর আবার চেষ্টা করুন।');
+          }
+        } on SocketException {
+          if (attempt >= _maxAttempts) {
+            throw Exception('ইন্টারনেট সংযোগ বা সার্ভারে সমস্যা হয়েছে। সংযোগ দেখে আবার চেষ্টা করুন।');
+          }
+          await Future.delayed(Duration(seconds: 3 * attempt));
+        } on http.ClientException {
+          if (attempt >= _maxAttempts) {
+            throw Exception('সার্ভারে সংযোগ করা যায়নি। কিছুক্ষণ পর আবার চেষ্টা করুন।');
+          }
+          await Future.delayed(Duration(seconds: 3 * attempt));
+        }
+      }
+    } finally {
+      slowTimer.cancel();
+      if (--_pending <= 0) {
+        _pending = 0;
+        serverWaking.value = false;
+      }
+    }
+  }
+
+  static Future<http.Response> _get(Uri uri) => _send(() => http.get(uri));
+
+  static Future<http.Response> _post(Uri uri, {Map<String, String>? headers, Object? body}) =>
+      _send(() => http.post(uri, headers: headers, body: body));
+
   Future<ResumeResult> generateResume(ResumeFormData data) async {
     final uri = Uri.parse("$baseUrl/api/resume/generate");
-    final response = await http.post(
+    final response = await _post(
       uri,
       headers: {"Content-Type": "application/json; charset=UTF-8"},
       body: jsonEncode(data.toJson()),
@@ -47,7 +98,7 @@ class ApiService {
     String language = "bn",
   }) async {
     final uri = Uri.parse("$baseUrl/api/cover-letter/generate");
-    final response = await http.post(
+    final response = await _post(
       uri,
       headers: {"Content-Type": "application/json; charset=UTF-8"},
       body: jsonEncode({
@@ -72,7 +123,7 @@ class ApiService {
   /// বাংলা যুক্তাক্ষর/কার shape করতে পারে না (backend/pdf_export.py দেখুন)।
   Future<Uint8List> exportResumePdf(String text) async {
     final uri = Uri.parse("$baseUrl/api/resume/pdf");
-    final response = await http.post(
+    final response = await _post(
       uri,
       headers: {"Content-Type": "application/json; charset=UTF-8"},
       body: jsonEncode({"text": text}),
@@ -90,7 +141,7 @@ class ApiService {
   /// history-তে শুধু উত্তর দেওয়া প্রশ্নগুলো পাঠাতে হবে। খালি history = প্রথম প্রশ্ন।
   Future<InterviewTurnResult> interviewTurn(InterviewSetup setup, List<InterviewTurn> history) async {
     final uri = Uri.parse("$baseUrl/api/interview/turn");
-    final response = await http.post(
+    final response = await _post(
       uri,
       headers: {"Content-Type": "application/json; charset=UTF-8"},
       body: jsonEncode({
@@ -118,7 +169,7 @@ class ApiService {
     String? jobDescription,
     String language = "bn",
   }) async {
-    final response = await http.post(
+    final response = await _post(
       Uri.parse("$baseUrl/api/job-match/analyze"),
       headers: {"Content-Type": "application/json; charset=UTF-8"},
       body: jsonEncode({
@@ -134,7 +185,7 @@ class ApiService {
   }
 
   Future<RecommendResult> recommendJobs(CandidateProfile profile, {int limit = 5, String language = "bn"}) async {
-    final response = await http.post(
+    final response = await _post(
       Uri.parse("$baseUrl/api/job-match/recommend"),
       headers: {"Content-Type": "application/json; charset=UTF-8"},
       body: jsonEncode({...profile.toJson(), "limit": limit, "language": language}),
@@ -157,7 +208,7 @@ class ApiService {
   // ---------------- Premium / Payments ----------------
 
   Future<PlansInfo> getPlans() async {
-    final response = await http.get(Uri.parse("$baseUrl/api/payments/plans"));
+    final response = await _get(Uri.parse("$baseUrl/api/payments/plans"));
     if (response.statusCode == 200) {
       return PlansInfo.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
     }
@@ -165,7 +216,7 @@ class ApiService {
   }
 
   Future<SubscriptionStatus> getSubscriptionStatus(String subscriberId) async {
-    final response = await http.get(Uri.parse("$baseUrl/api/payments/status/$subscriberId"));
+    final response = await _get(Uri.parse("$baseUrl/api/payments/status/$subscriberId"));
     if (response.statusCode == 200) {
       return SubscriptionStatus.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
     }
@@ -177,7 +228,7 @@ class ApiService {
     required String planCode,
     required String provider,
   }) async {
-    final response = await http.post(
+    final response = await _post(
       Uri.parse("$baseUrl/api/payments/create"),
       headers: {"Content-Type": "application/json; charset=UTF-8"},
       body: jsonEncode({"subscriber_id": subscriberId, "plan_code": planCode, "provider": provider}),
@@ -190,7 +241,7 @@ class ApiService {
   Future<PaymentInfo> getPayment(int paymentId, String subscriberId) async {
     final uri = Uri.parse("$baseUrl/api/payments/$paymentId")
         .replace(queryParameters: {"subscriber_id": subscriberId});
-    final response = await http.get(uri);
+    final response = await _get(uri);
     if (response.statusCode == 200) {
       return PaymentInfo.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
     }
@@ -212,7 +263,7 @@ class ApiService {
       if (search != null && search.isNotEmpty) 'search': search,
     };
     final uri = Uri.parse("$baseUrl/api/circulars/").replace(queryParameters: params);
-    final response = await http.get(uri);
+    final response = await _get(uri);
 
     if (response.statusCode == 200) {
       final List decoded = jsonDecode(utf8.decode(response.bodyBytes));
@@ -223,7 +274,7 @@ class ApiService {
 
   Future<JobCircular> getCircularDetail(int id) async {
     final uri = Uri.parse("$baseUrl/api/circulars/$id");
-    final response = await http.get(uri);
+    final response = await _get(uri);
     if (response.statusCode == 200) {
       return JobCircular.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
     }
@@ -232,7 +283,7 @@ class ApiService {
 
   Future<List<String>> getCircularCategories() async {
     final uri = Uri.parse("$baseUrl/api/circulars/categories/list");
-    final response = await http.get(uri);
+    final response = await _get(uri);
     if (response.statusCode == 200) {
       final List decoded = jsonDecode(utf8.decode(response.bodyBytes));
       return decoded.cast<String>();
@@ -244,7 +295,7 @@ class ApiService {
 
   Future<List<Subject>> getSubjects() async {
     final uri = Uri.parse("$baseUrl/api/questions/subjects");
-    final response = await http.get(uri);
+    final response = await _get(uri);
     if (response.statusCode == 200) {
       final List decoded = jsonDecode(utf8.decode(response.bodyBytes));
       return decoded.map((e) => Subject.fromJson(e)).toList();
@@ -265,7 +316,7 @@ class ApiService {
       if (examYear != null) 'exam_year': '$examYear',
     };
     final uri = Uri.parse("$baseUrl/api/questions/").replace(queryParameters: params);
-    final response = await http.get(uri);
+    final response = await _get(uri);
     if (response.statusCode == 200) {
       final List decoded = jsonDecode(utf8.decode(response.bodyBytes));
       return decoded.map((e) => ExamQuestion.fromJson(e)).toList();
@@ -278,7 +329,7 @@ class ApiService {
       if (subjectId != null) 'subject_id': '$subjectId',
     };
     final uri = Uri.parse("$baseUrl/api/study/").replace(queryParameters: params);
-    final response = await http.get(uri);
+    final response = await _get(uri);
     if (response.statusCode == 200) {
       final List decoded = jsonDecode(utf8.decode(response.bodyBytes));
       return decoded.map((e) => StudyMaterial.fromJson(e)).toList();
@@ -294,7 +345,7 @@ class ApiService {
     String? preferredCategories,
   }) async {
     final uri = Uri.parse("$baseUrl/api/notifications/register-device");
-    await http.post(
+    await _post(
       uri,
       headers: {"Content-Type": "application/json; charset=UTF-8"},
       body: jsonEncode({
